@@ -35,7 +35,7 @@ list_all_versions() {
 	# Change this function if roc has other means of determining installable versions.
 	# list_github_tags
 	# currently only nightly
-	echo 'nightly' && echo 'nightly-old'
+	echo 'alpha4-rolling'
 }
 
 download_release() {
@@ -62,7 +62,7 @@ download_release() {
 
 	# TODO: Adapt the release URL convention for roc
 	# url="$GH_REPO/archive/v${version}.tar.gz"
-	url="$GH_REPO/releases/download/nightly/roc_${version}-${os}_${arch}-latest.tar.gz"
+	url="$GH_REPO/releases/download/${version}/roc-${os}_${arch}-${version}.tar.gz"
 
 	echo "* Downloading $TOOL_NAME release $version..."
 	curl "${curl_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download $url"
