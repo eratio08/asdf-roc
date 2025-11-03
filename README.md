@@ -15,19 +15,14 @@
 
 # Dependencies
 
-**TODO: adapt this section**
-
 - `bash`, `curl`, `tar`, and [POSIX utilities](https://pubs.opengroup.org/onlinepubs/9699919799/idx/utilities.html).
-- `SOME_ENV_VAR`: set this environment variable in your shell config to load the correct version of tool x.
 
 # Install
 
 Plugin:
 
 ```shell
-asdf plugin add roc
-# or
-asdf plugin add roc https://github.com/dkuku/asdf-roc.git
+asdf plugin add roc https://github.com/eratio08/asdf-roc.git
 ```
 
 roc:
@@ -46,15 +41,4 @@ asdf global roc latest
 roc -V
 ```
 
-Check [asdf](https://github.com/asdf-vm/asdf) readme for more instructions on how to
-install & manage versions.
-
-# Contributing
-
-Contributions of any kind welcome! See the [contributing guide](contributing.md).
-
-[Thanks goes to these contributors](https://github.com/dkuku/asdf-roc/graphs/contributors)!
-
-# License
-
-See [LICENSE](LICENSE) © [Daniel Kukula](https://github.com/dkuku/)
+Check [asdf](https://github.com/asdf-vm/asdf) readme for more instructions on how to install & manage versions.
