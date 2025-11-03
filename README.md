@@ -1,6 +1,6 @@
 <div align="center">
 
-# asdf-roc [![Build](https://github.com/dkuku/asdf-roc/actions/workflows/build.yml/badge.svg)](https://github.com/dkuku/asdf-roc/actions/workflows/build.yml) [![Lint](https://github.com/dkuku/asdf-roc/actions/workflows/lint.yml/badge.svg)](https://github.com/dkuku/asdf-roc/actions/workflows/lint.yml)
+# asdf-roc [![Build](https://github.com/eratio08/asdf-roc/actions/workflows/build.yml/badge.svg)](https://github.com/eratio08/asdf-roc/actions/workflows/build.yml) [![Lint](https://github.com/eratio08/asdf-roc/actions/workflows/lint.yml/badge.svg)](https://github.com/eratio08/asdf-roc/actions/workflows/lint.yml)
 
 [roc](https://www.roc-lang.org) plugin for the [asdf version manager](https://asdf-vm.com).
 
