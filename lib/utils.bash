@@ -4,6 +4,7 @@ set -euo pipefail
 
 # TODO: Ensure this is the correct GitHub homepage where releases can be downloaded for roc.
 GH_REPO="https://github.com/roc-lang/roc"
+GH_NIGHTLY_REPO="https://github.com/roc-lang/nightlies"
 TOOL_NAME="roc"
 TOOL_TEST="roc -V"
 
@@ -25,23 +26,43 @@ sort_versions() {
 }
 
 list_github_tags() {
-	git ls-remote --tags --refs "$GH_REPO" |
+	local repo="${1:-$GH_NIGHTLY_REPO}"
+	git ls-remote --tags --refs "$repo" |
 		grep -o 'refs/tags/.*' | cut -d/ -f3- |
 		sed 's/^v//' # NOTE: You might want to adapt this sed to remove non-version strings from tags
 }
 
 list_all_versions() {
-	# TODO: Adapt this. By default we simply list the tag names from GitHub releases.
-	# Change this function if roc has other means of determining installable versions.
-	# list_github_tags
-	# currently only nightly
-	echo 'alpha4-rolling'
+	# List versions from both repos (nightly and stable releases)
+	# Combine tags from both repos, sort, and remove duplicates
+	{
+		list_github_tags "$GH_NIGHTLY_REPO"
+		list_github_tags "$GH_REPO"
+	} | sort_versions | uniq
+}
+
+get_repo_for_version() {
+	local version="$1"
+	# Check if version exists in nightly repo
+	if git ls-remote --tags --refs "$GH_NIGHTLY_REPO" | grep -q "refs/tags/v\?${version}$"; then
+		echo "$GH_NIGHTLY_REPO"
+	# Otherwise check stable repo
+	elif git ls-remote --tags --refs "$GH_REPO" | grep -q "refs/tags/v\?${version}$"; then
+		echo "$GH_REPO"
+	else
+		# Default to stable repo if not found
+		echo "$GH_REPO"
+	fi
 }
 
 download_release() {
-	local version filename url
+	local version filename url repo asset_name
 	version="$1"
 	filename="$2"
+	
+	# Determine which repo to download from
+	repo=$(get_repo_for_version "$version")
+	
 	arch=$(uname -m)
 	os=$(uname)
 	case $os in
@@ -60,11 +81,13 @@ download_release() {
 		arch="apple_silicon"
 	fi
 
-	# TODO: Adapt the release URL convention for roc
-	# url="$GH_REPO/archive/v${version}.tar.gz"
-	url="$GH_REPO/releases/download/${version}/roc-${os}_${arch}-${version}.tar.gz"
+	# Construct download URL based on the repo
+	# Both repos use: roc-${os}_${arch}-${tag}.tar.gz
+	# The tag is used as-is (nightly tags like "nightly-2024-01-15" or stable tags like "0.10.0")
+	asset_name="roc-${os}_${arch}-${version}.tar.gz"
+	url="${repo}/releases/download/${version}/${asset_name}"
 
-	echo "* Downloading $TOOL_NAME release $version..."
+	echo "* Downloading $TOOL_NAME release $version from $(basename "$repo")..."
 	curl "${curl_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download $url"
 }
 
