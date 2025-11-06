@@ -21,4 +21,4 @@ jobs:
         with:
           version: alpha4-rolling
           command: roc -V
-          gitref: ${{ github.head_ref }}
+          gitref: ${{ github.head_ref || github.ref_name }}
