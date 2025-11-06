@@ -5,7 +5,7 @@ set -euo pipefail
 GH_REPO="https://github.com/roc-lang/roc"
 GH_NIGHTLY_REPO="https://github.com/roc-lang/nightlies"
 TOOL_NAME="roc"
-TOOL_TEST="roc -V"
+TOOL_TEST="roc --version"
 
 fail() {
 	echo -e "asdf-$TOOL_NAME: $*"
@@ -17,14 +17,6 @@ curl_opts=(-fsSL)
 if [ -n "${GITHUB_API_TOKEN:-}" ]; then
 	curl_opts=("${curl_opts[@]}" -H "Authorization: token $GITHUB_API_TOKEN")
 fi
-
-sort_versions() {
-	# Sorts version numbers semantically (e.g., 0.0.9 < 0.0.10 < 0.1.0)
-	# Transforms versions for numeric sorting, then restores original format
-	# Example: 1.2.3-alpha+build → sorts correctly by major.minor.patch
-	sed 'h; s/[+-]/./g; s/.p\([[:digit:]]\)/.z\1/; s/$/.z/; G; s/\n/ /' |
-		LC_ALL=C sort -t. -k 1,1 -k 2,2n -k 3,3n -k 4,4n -k 5,5n | awk '{print $2}'
-}
 
 list_github_releases() {
 	local repo="${1:-$GH_NIGHTLY_REPO}"
@@ -42,7 +34,7 @@ list_all_versions() {
 	{
 		list_github_releases "$GH_NIGHTLY_REPO"
 		list_github_releases "$GH_REPO"
-	} | sort_versions | uniq
+	} | awk '!seen[$0]++' | sed '1!G;h;$!d'
 }
 
 get_repo_for_version() {
