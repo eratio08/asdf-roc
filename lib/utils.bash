@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-# TODO: Ensure this is the correct GitHub homepage where releases can be downloaded for roc.
 GH_REPO="https://github.com/roc-lang/roc"
 GH_NIGHTLY_REPO="https://github.com/roc-lang/nightlies"
 TOOL_NAME="roc"
@@ -15,54 +14,73 @@ fail() {
 
 curl_opts=(-fsSL)
 
-# NOTE: You might want to remove this if roc is not hosted on GitHub releases.
 if [ -n "${GITHUB_API_TOKEN:-}" ]; then
 	curl_opts=("${curl_opts[@]}" -H "Authorization: token $GITHUB_API_TOKEN")
 fi
 
 sort_versions() {
+	# Sorts version numbers semantically (e.g., 0.0.9 < 0.0.10 < 0.1.0)
+	# Transforms versions for numeric sorting, then restores original format
+	# Example: 1.2.3-alpha+build → sorts correctly by major.minor.patch
 	sed 'h; s/[+-]/./g; s/.p\([[:digit:]]\)/.z\1/; s/$/.z/; G; s/\n/ /' |
 		LC_ALL=C sort -t. -k 1,1 -k 2,2n -k 3,3n -k 4,4n -k 5,5n | awk '{print $2}'
 }
 
-list_github_tags() {
+list_github_releases() {
 	local repo="${1:-$GH_NIGHTLY_REPO}"
-	git ls-remote --tags --refs "$repo" |
-		grep -o 'refs/tags/.*' | cut -d/ -f3- |
-		sed 's/^v//' # NOTE: You might want to adapt this sed to remove non-version strings from tags
+	local api_url
+	api_url="${repo/https:\/\/github.com/https://api.github.com/repos}"
+	api_url="${api_url}/releases"
+
+	curl "${curl_opts[@]}" "${api_url}?per_page=100" |
+		grep -oE '"tag_name": "[^"]+"' |
+		cut -d'"' -f4 |
+		sed 's/^v//'
 }
 
 list_all_versions() {
-	# List versions from both repos (nightly and stable releases)
-	# Combine tags from both repos, sort, and remove duplicates
 	{
-		list_github_tags "$GH_NIGHTLY_REPO"
-		list_github_tags "$GH_REPO"
+		list_github_releases "$GH_NIGHTLY_REPO"
+		list_github_releases "$GH_REPO"
 	} | sort_versions | uniq
 }
 
 get_repo_for_version() {
 	local version="$1"
-	# Check if version exists in nightly repo
-	if git ls-remote --tags --refs "$GH_NIGHTLY_REPO" | grep -q "refs/tags/v\?${version}$"; then
+	if list_github_releases "$GH_NIGHTLY_REPO" | grep -q "^${version}$"; then
 		echo "$GH_NIGHTLY_REPO"
-	# Otherwise check stable repo
-	elif git ls-remote --tags --refs "$GH_REPO" | grep -q "refs/tags/v\?${version}$"; then
+	elif list_github_releases "$GH_REPO" | grep -q "^${version}$"; then
 		echo "$GH_REPO"
 	else
-		# Default to stable repo if not found
 		echo "$GH_REPO"
 	fi
 }
 
+get_download_url_from_github() {
+	local repo="$1"
+	local version="$2"
+	local os="$3"
+	local arch="$4"
+
+	local api_url
+	api_url="${repo/https:\/\/github.com/https://api.github.com/repos}"
+	api_url="${api_url}/releases/tags/${version}"
+
+	local pattern="${os}_${arch}.*\.tar\.gz"
+	curl "${curl_opts[@]}" "$api_url" |
+		grep -oE '"browser_download_url": "[^"]+"' |
+		grep -E "$pattern" |
+		head -n 1 |
+		cut -d'"' -f4
+}
+
 download_release() {
-	local version filename url repo asset_name
+	local version filename url repo
 	version="$1"
 	filename="$2"
-	
-	# Determine which repo to download from
+
 	repo=$(get_repo_for_version "$version")
-	
+
 	arch=$(uname -m)
 	os=$(uname)
 	case $os in
@@ -81,11 +99,11 @@ download_release() {
 		arch="apple_silicon"
 	fi
 
-	# Construct download URL based on the repo
-	# Both repos use: roc-${os}_${arch}-${tag}.tar.gz
-	# The tag is used as-is (nightly tags like "nightly-2024-01-15" or stable tags like "0.10.0")
-	asset_name="roc-${os}_${arch}-${version}.tar.gz"
-	url="${repo}/releases/download/${version}/${asset_name}"
+	url=$(get_download_url_from_github "$repo" "$version" "$os" "$arch")
+
+	if [ -z "$url" ]; then
+		fail "Could not find release asset for $TOOL_NAME $version (${os}_${arch})"
+	fi
 
 	echo "* Downloading $TOOL_NAME release $version from $(basename "$repo")..."
 	curl "${curl_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download $url"
