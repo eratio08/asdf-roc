@@ -6,30 +6,24 @@
 
 </div>
 
-# Contents
+> [!NOTE]
+> Supports nightly releases
 
-- [Dependencies](#dependencies)
-- [Install](#install)
-- [Contributing](#contributing)
-- [License](#license)
 
-# Dependencies
+## Dependencies
 
 - `bash`, `curl`, `tar`, and [POSIX utilities](https://pubs.opengroup.org/onlinepubs/9699919799/idx/utilities.html).
 
-# Install
 
-Plugin:
+## Install
 
 ```shell
 asdf plugin add roc https://github.com/eratio08/asdf-roc.git
 ```
 
-roc:
-
 ```shell
 # Show all installable versions
-asdf list-all roc
+asdf list all roc
 
 # Install specific version
 asdf install roc latest
@@ -38,7 +32,7 @@ asdf install roc latest
 asdf global roc latest
 
 # Now roc commands are available
-roc -V
+roc version
 ```
 
 Check [asdf](https://github.com/asdf-vm/asdf) readme for more instructions on how to install & manage versions.
