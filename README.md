@@ -7,7 +7,8 @@
 </div>
 
 > [!NOTE]
-> Supports nightly releases
+> Supports nightly releases.
+> The plugin lists the ten newest nightly releases.
 
 
 ## Dependencies

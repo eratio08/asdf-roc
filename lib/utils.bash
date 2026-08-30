@@ -20,28 +20,39 @@ fi
 
 list_github_releases() {
 	local repo="${1:-$GH_NIGHTLY_REPO}"
+	local page_size="${2:-100}"
 	local api_url
 	api_url="${repo/https:\/\/github.com/https://api.github.com/repos}"
 	api_url="${api_url}/releases"
 
-	curl "${curl_opts[@]}" "${api_url}?per_page=100" |
+	curl "${curl_opts[@]}" "${api_url}?per_page=${page_size}" |
 		grep -oE '"tag_name": "[^"]+"' |
 		cut -d'"' -f4 |
 		sed 's/^v//'
 }
 
+github_release_exists() {
+	local repo="$1"
+	local version="$2"
+	local api_url
+	api_url="${repo/https:\/\/github.com/https://api.github.com/repos}"
+	api_url="${api_url}/releases/tags/${version}"
+
+	curl "${curl_opts[@]}" -o /dev/null "$api_url"
+}
+
 list_all_versions() {
 	{
-		list_github_releases "$GH_NIGHTLY_REPO"
+		list_github_releases "$GH_NIGHTLY_REPO" 10
 		list_github_releases "$GH_REPO"
 	} | awk '!seen[$0]++' | sed '1!G;h;$!d'
 }
 
 get_repo_for_version() {
 	local version="$1"
-	if list_github_releases "$GH_NIGHTLY_REPO" | grep -q "^${version}$"; then
+	if github_release_exists "$GH_NIGHTLY_REPO" "$version"; then
 		echo "$GH_NIGHTLY_REPO"
-	elif list_github_releases "$GH_REPO" | grep -q "^${version}$"; then
+	elif github_release_exists "$GH_REPO" "$version"; then
 		echo "$GH_REPO"
 	else
 		echo "$GH_REPO"
